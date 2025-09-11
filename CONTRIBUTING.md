@@ -47,9 +47,9 @@ Open GitHub, go to your fork, and click **Compare \& Pull Request**. Make sure t
 Before starting new work, sync your fork with the main repo to avoid working on outdated repo, avoiding conflicts:
 
 ```
-git fetch upstream  
-git checkout main  
-git merge upstream/main  
+git fetch upstream
+git checkout main
+git pull --rebase upstream main
 git push origin main
 ```
 
