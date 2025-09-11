@@ -21,7 +21,11 @@ Add the original repo as the upstream remote to pull updates later:
 
 When working on something new, always create a branch instead of editing main directly (a good practice):
 
-`git checkout -b feature/<short-description>`
+`
+git checkout frontend      # or backend
+git pull --rebase upstream frontend
+git checkout -b feature/<short-description>
+`
 
 Example:
 
@@ -40,17 +44,17 @@ Push your branch to your fork:
 
 ## Creating a Pull Request
 
-Open GitHub, go to your fork, and click **Compare \& Pull Request**. Make sure the target branch is `main` of the upstream repo. Write a clear PR description explaining your changes.
+Open GitHub, go to your fork, and click **Compare \& Pull Request**. Make sure the target branch is `frontend` or `backend` (or any branch you are working on) and not `main` of the upstream repo. Write a clear PR description explaining your changes.
 
 ## Sync Fork Before New Work
 
-Before starting new work, sync your fork with the main repo to avoid working on outdated repo, avoiding conflicts:
+Before starting new work, update your local main branch:
 
 ```
 git fetch upstream
-git checkout main
-git pull --rebase upstream main
-git push origin main
+git checkout frontend        # or backend
+git pull --rebase upstream frontend
+git push origin frontend
 ```
 
 
