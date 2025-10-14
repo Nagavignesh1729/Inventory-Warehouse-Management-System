@@ -1,0 +1,54 @@
+# Node modules
+node_modules/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build output
+dist/
+build/
+coverage/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.swp
+*.swo
+*.bak
+
+# IDE and editor settings
+.vscode/
+.idea/
+*.iml
+
+# Test coverage and cache
+coverage/
+.nyc_output/
+.cache/
+
+# Supabase local project config (if using local dev)
+.supabase/
+
+# Optional: PM2 / process manager logs
+pids/
+*.pid
+*.seed
+
+# Optional: Lock files (if using a single package manager)
+# Uncomment one if you're standardizing
+# yarn.lock
+# package-lock.json
+# pnpm-lock.yaml
