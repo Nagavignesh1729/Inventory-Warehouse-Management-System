@@ -57,6 +57,17 @@ git pull --rebase upstream frontend
 git push origin frontend
 ```
 
+## Branch Policy
+- main → stable
+- dev → integration branch
+- backend → backend team development
+- frontend → frontend team development
+
+### Workflow
+1. Backend team raises PR → backend
+2. Frontend team raises PR → frontend
+3. Tech lead merges backend & frontend → dev
+4. After testing, dev → main
 
 ## Suggestions to Follow
 
