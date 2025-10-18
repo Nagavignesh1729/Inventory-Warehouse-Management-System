@@ -27,10 +27,25 @@ async function deleteUser(userId) {
   return { data, error };
 }
 
+async function getUserWithRole(userId) {
+  const { data, error } = await supabase
+    .from(USERS_TABLE)
+    .select(`
+      *,
+      roles (
+        role_name
+      )
+    `)
+    .eq('user_id', userId)
+    .single();
+  return { data, error };
+}
+
 module.exports = {
   getUserById,
   listUsers,
   createUser,
   updateUser,
+  getUserWithRole,
   deleteUser
 };
