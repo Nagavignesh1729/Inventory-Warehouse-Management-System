@@ -1,4 +1,4 @@
-// src/__tests__/NotFound.test.jsx
+// NotFound.test.jsx
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import NotFound from '../pages/NotFound';
