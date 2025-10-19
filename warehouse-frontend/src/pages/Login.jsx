@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Package, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { login as apiLogin, me as apiMe, saveTokens } from '../api/client';
 
 const Login = ({ onLogin, onNavigateToSignup }) => {
   const [email, setEmail] = useState('manager@inventorypro.com'); // Default email for demo
@@ -10,18 +11,18 @@ const Login = ({ onLogin, onNavigateToSignup }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-
-    // Simulate login process
-    setTimeout(() => {
+    try {
+      const { access_token, refresh_token, user } = await apiLogin(email, password);
+      saveTokens({ access_token, refresh_token });
+      const profile = await apiMe(access_token);
+      const displayName = profile?.user_metadata?.full_name || profile?.email?.split('@')[0] || user?.email || 'User';
+      const normalizedUser = { name: displayName, email: profile?.email || user?.email };
+      onLogin(normalizedUser);
+    } catch (err) {
+      alert(err.message || 'Login failed');
+    } finally {
       setIsLoading(false);
-      
-      // Create a user object from the email
-      const nameFromEmail = email.split('@')[0];
-      const capitalizedName = nameFromEmail.charAt(0).toUpperCase() + nameFromEmail.slice(1);
-      const user = { name: capitalizedName, email: email };
-      
-      onLogin(user); // Pass user object on successful login
-    }, 1000);
+    }
   };
 
   return (

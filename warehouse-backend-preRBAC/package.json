@@ -1,5 +1,15 @@
 {
   "devDependencies": {
     "@ljharb/tsconfig": "^0.3.2"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.75.1",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "helmet": "^8.1.0",
+    "joi": "^18.0.1",
+    "morgan": "^1.10.1",
+    "winston": "^3.18.3"
   }
 }

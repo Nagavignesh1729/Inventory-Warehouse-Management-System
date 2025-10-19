@@ -17,13 +17,13 @@ import CSVImporter from './components/CSVImporter';
 function App() {
   const [currentPage, setCurrentPage] = useState('login');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [currentUser, setCurrentUser] = useState(null); // Add state for the current user
-  const [selectedWarehouse, setSelectedWarehouse] = useState(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [selectedWarehouse, setSelectedWarehouse] = useState<string | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [isSidebarOpen, setSidebarOpen] = useState(false);
-  const [notifications, setNotifications] = useState([]);
+  const [notifications, setNotifications] = useState<any[]>([]);
 
-  const addNotification = (notification) => {
+  const addNotification = (notification: any) => {
     setNotifications(prev => [{ ...notification, id: Date.now(), read: false }, ...prev]);
   };
 
@@ -31,8 +31,7 @@ function App() {
     setNotifications(notifications.map(n => ({ ...n, read: true })));
   };
 
-  // Modify handleLogin to accept user data
-  const handleLogin = (user) => {
+  const handleLogin = (user: any) => {
     setIsAuthenticated(true);
     setCurrentUser(user);
     setCurrentPage('dashboard');
@@ -40,16 +39,16 @@ function App() {
 
   const handleLogout = () => {
     setIsAuthenticated(false);
-    setCurrentUser(null); // Clear the user on logout
+    setCurrentUser(null);
     setCurrentPage('login');
   };
 
-  const navigateToWarehouse = (warehouseId) => {
+  const navigateToWarehouse = (warehouseId: string) => {
     setSelectedWarehouse(warehouseId);
     setCurrentPage('warehouse-detail');
   };
-  
-  const handleNavigate = (page) => {
+
+  const handleNavigate = (page: string) => {
     setCurrentPage(page);
     setSidebarOpen(false);
   };
@@ -62,7 +61,6 @@ function App() {
   }
 
   const renderCurrentPage = () => {
-    // ... (switch statement remains the same)
     switch (currentPage) {
       case 'dashboard':
         return <Dashboard onNavigate={setCurrentPage} onImport={() => setIsImporting(true)} />;
@@ -87,17 +85,15 @@ function App() {
     <div className="flex h-screen bg-gray-50 overflow-hidden">
       <Sidebar currentPage={currentPage} onNavigate={handleNavigate} isOpen={isSidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Topbar 
-          onLogout={handleLogout} 
+        <Topbar
+          onLogout={handleLogout}
           onMenuClick={() => setSidebarOpen(true)}
           notifications={notifications}
           onClearNotifications={markNotificationsAsRead}
-          currentUser={currentUser} // Pass user data to Topbar
+          currentUser={currentUser}
         />
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50">
-          <div className="container mx-auto px-4 sm:px-6 py-8">
-            {renderCurrentPage()}
-          </div>
+          <div className="container mx-auto px-4 sm:px-6 py-8">{renderCurrentPage()}</div>
         </main>
       </div>
       <Modal isOpen={isImporting} onClose={() => setIsImporting(false)} title="Import CSV" size="xl">

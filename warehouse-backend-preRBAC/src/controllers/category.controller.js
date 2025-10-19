@@ -17,8 +17,7 @@ async function getCategory(req, res) {
 }
 
 async function createCategory(req, res) {
-  
-  const payload = { ...req.body };
+  const payload = { ...req.body, created_by: req.user?.id };
   const { data, error: svcErr } = await categoryService.createCategory(payload);
   if (svcErr) return error(res, svcErr.message, 500);
   return success(res, data, 'Category created', 201);

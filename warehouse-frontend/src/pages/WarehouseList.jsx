@@ -1,70 +1,52 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, MapPin, Package, TrendingUp, Edit, Trash2, Eye } from 'lucide-react';
 import DataTable from '../components/DataTable';
 import FilterBar from '../components/FilterBar';
 import Modal from '../components/Modal';
 import EmptyState from '../components/EmptyState';
 import Badge from '../components/Badge';
+import { listWarehouses as apiListWarehouses } from '../api/client';
+import { createWarehouse as apiCreateWarehouse } from '../api/client';
 
 const WarehouseList = ({ onWarehouseSelect }) => {
   const [showWarehouseForm, setShowWarehouseForm] = useState(false);
   const [editingWarehouse, setEditingWarehouse] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
 
-  const sampleWarehouses = [
-    { 
-      id: 'WH001', 
-      name: 'Main Warehouse', 
-      location: 'New York, NY', 
-      capacity: '50,000 sq ft', 
-      currentStock: 1247,
-      utilization: 85,
-      status: 'Active',
-      manager: 'John Smith'
-    },
-    { 
-      id: 'WH002', 
-      name: 'Electronics Hub', 
-      location: 'Los Angeles, CA', 
-      capacity: '30,000 sq ft', 
-      currentStock: 892,
-      utilization: 72,
-      status: 'Active',
-      manager: 'Sarah Johnson'
-    },
-    { 
-      id: 'WH003', 
-      name: 'Tech Center', 
-      location: 'Austin, TX', 
-      capacity: '25,000 sq ft', 
-      currentStock: 456,
-      utilization: 45,
-      status: 'Active',
-      manager: 'Mike Davis'
-    },
-    { 
-      id: 'WH004', 
-      name: 'Fashion Store', 
-      location: 'Miami, FL', 
-      capacity: '20,000 sq ft', 
-      currentStock: 678,
-      utilization: 68,
-      status: 'Maintenance',
-      manager: 'Emma Wilson'
-    },
-    { 
-      id: 'WH005', 
-      name: 'Book Depot', 
-      location: 'Chicago, IL', 
-      capacity: '15,000 sq ft', 
-      currentStock: 234,
-      utilization: 32,
-      status: 'Active',
-      manager: 'David Brown'
-    }
-  ];
+  const [warehouses, setWarehouses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const [warehouses, setWarehouses] = useState(sampleWarehouses);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await apiListWarehouses();
+        const mapped = (data || []).map((row) => ({
+          id: row.warehouse_id || row.id || row.code || String(row.id || row.warehouse_id || ''),
+          name: row.name || row.warehouse_name || 'Unnamed',
+          location: row.location || [row.city, row.state].filter(Boolean).join(', ') || 'Unknown',
+          capacity: typeof row.capacity === 'number' ? `${row.capacity.toLocaleString()} sq ft` : (row.capacity || ''),
+          currentStock: row.total_stock ?? row.current_stock ?? 0,
+          utilization: row.utilization ?? 0,
+          status: row.status || 'Active',
+          manager: row.manager || '',
+          address: row.address || '',
+          phone: row.phone || '',
+          email: row.email || '',
+        }));
+        if (!cancelled) {
+          setWarehouses(mapped);
+          setError(null);
+        }
+      } catch (err) {
+        if (!cancelled) setError(err.message || 'Failed to load warehouses');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const columns = [
     { key: 'id', label: 'Warehouse ID', sortable: true },
@@ -163,24 +145,24 @@ const WarehouseList = ({ onWarehouseSelect }) => {
     }
   };
 
-  const handleSaveWarehouse = (warehouseData) => {
+  const handleSaveWarehouse = async (warehouseData) => {
+    try {
     if (editingWarehouse) {
-      // ** THIS IS THE FIX **
-      // Merge the existing warehouse data (...wh) with the new data (...warehouseData)
+      // update exising record
+      const updated = await apiCreateWarehouse(warehouseData);
       setWarehouses(warehouses.map(wh => 
-        wh.id === editingWarehouse.id ? { ...wh, ...warehouseData } : wh
+        wh.id === editingWarehouse.id ? { ...wh, ...updated } : wh
       ));
     } else {
-      const newWarehouse = {
-        ...warehouseData,
-        id: `WH${String(warehouses.length + 1).padStart(3, '0')}`,
-        currentStock: 0,
-        utilization: 0
-      };
-      setWarehouses([...warehouses, newWarehouse]);
+      // create new warehouse
+      const created = await apiCreateWarehouse(warehouseData);
+      setWarehouses([...warehouses, created]);
     }
     setShowWarehouseForm(false);
     setEditingWarehouse(null);
+    } catch (err) {
+      alert('Failed to save warehouse: ' + (err.message || 'Unknown error'));
+    }
   };
 
   const filteredWarehouses = warehouses.filter(warehouse =>
@@ -213,6 +195,13 @@ const WarehouseList = ({ onWarehouseSelect }) => {
         onSearchChange={setSearchTerm}
         filters={[]}
       />
+
+      {loading && (
+        <div className="text-gray-600">Loading warehouses...</div>
+      )}
+      {error && (
+        <div className="text-red-600">Failed to load warehouses: {error}</div>
+      )}
 
       {filteredWarehouses.length === 0 ? (
         <EmptyState
