@@ -19,30 +19,42 @@ async function getStockLevel(req, res) {
 }
 
 async function createStockLevel(req, res) {
-  const payload = { ...req.body, created_by: req.user?.id };
+  const payload = { ...req.body };
   const { data, error: svcErr } = await stockService.createStockLevel(payload);
   if (svcErr) return error(res, svcErr.message, 500);
   return success(res, data, 'Stock level created', 201);
 }
 
 async function updateStockLevel(req, res) {
-  const { id } = req.params;
-  const payload = { ...req.body, updated_by: req.user?.id };
-  // This also creates a transaction
-  const { data, error: svcErr } = await stockService.updateStockLevel(id, payload);
-  if (svcErr) return error(res, svcErr.message, 500);
-  
-  // Also create an 'ADJUST' transaction
-  await stockService.createTransaction({
-      item_id: data.item_id,
-      warehouse_id: data.warehouse_id,
-      type: 'ADJUST',
-      quantity: payload.quantity - data.quantity, // a bit simplistic
-      notes: payload.reason || 'Manual stock adjustment',
-      initiated_by: req.user?.id
-  });
+    const { id } = req.params;
+    const payload = { ...req.body, updated_by: req.user?.id };
 
-  return success(res, data, 'Stock level updated');
+    // First, get the current stock level to calculate the difference
+    const { data: currentStock, error: fetchErr } = await stockService.getStockLevelById(id);
+    if (fetchErr || !currentStock) {
+        return error(res, 'Stock level not found to update', 404);
+    }
+    
+    // Update the stock level itself
+    const { data, error: svcErr } = await stockService.updateStockLevel(id, payload);
+    if (svcErr) return error(res, svcErr.message, 500);
+
+    // FIXED: Calculate the difference and ensure quantity is positive for the transaction.
+    const quantityDifference = payload.quantity - currentStock.quantity;
+    
+    // Only create a transaction if there's a reason and the quantity actually changed.
+    if (payload.reason && quantityDifference !== 0) {
+        await stockService.createTransaction({
+            item_id: data.item_id,
+            warehouse_id: data.warehouse_id,
+            type: 'ADJUST',
+            quantity: Math.abs(quantityDifference), // This ensures the check constraint (quantity > 0) is met.
+            notes: payload.reason,
+            initiated_by: req.user?.id
+        });
+    }
+
+    return success(res, data, 'Stock level updated');
 }
 
 
@@ -79,3 +91,4 @@ module.exports = {
     getTransaction,
     createTransaction
 };
+
