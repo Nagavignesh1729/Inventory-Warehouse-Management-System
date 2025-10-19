@@ -1,13 +1,20 @@
 // src/routes/reports.routes.js
-import express from 'express';
-import { generateInventoryReport, generateSalesReport, generateSupplierReport } from '../controllers/reports.controller.js';
-import { verifyAuth } from '../middlewares/auth.middleware.js';
-
+const express = require('express');
 const router = express.Router();
+const reportsController = require('../controllers/reports.controller');
+const auth = require('../middlewares/auth.middleware');
+const authorize = require('../middlewares/authorization.middleware');
+const { ROLES } = require('../utils/constants');
 
-// Protected routes for report generation
-router.get('/inventory', verifyAuth, generateInventoryReport);
-router.get('/sales', verifyAuth, generateSalesReport);
-router.get('/suppliers', verifyAuth, generateSupplierReport);
+// This single endpoint can provide all the data for the frontend dashboard
+router.get('/dashboard', auth, authorize([ROLES.ADMIN, ROLES.MANAGER]), reportsController.getDashboardStats);
 
-export default router;
+// Corresponds to /reports/inventory-summary
+router.get('/inventory-summary', auth, authorize([ROLES.ADMIN, ROLES.MANAGER]), reportsController.getInventorySummary);
+
+// Add other report routes as per the documentation
+// router.get('/stock-movement', auth, ...);
+// router.get('/warehouse-utilization', auth, ...);
+
+module.exports = router;
+

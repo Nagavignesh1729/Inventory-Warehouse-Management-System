@@ -1,17 +1,39 @@
+// src/controllers/reports.controller.js
 const supabase = require('../config/supabaseclient');
 const { success, error } = require('../utils/response');
 
-async function stockSummary(req, res) {
-  // Example: sum of quantities grouped by item
-  const query = `SELECT items.item_id, items.name, SUM(stock_levels.quantity) as total_qty
-                 FROM stock_levels
-                 JOIN items ON stock_levels.item_id = items.item_id
-                 GROUP BY items.item_id, items.name
-                 ORDER BY total_qty DESC`;
-  const { data, error: err } = await supabase.rpc('sql', { query }).catch(() => ({ data: null, error: null }));
-  // Note: If Supabase doesn't allow raw SQL via rpc like this, do simpler queries via supabase.from
-  if (err) return error(res, err.message || 'Failed');
-  return success(res, data);
+// This is a placeholder for a more complex dashboard query
+async function getDashboardStats(req, res) {
+    try {
+        const { data: items } = await supabase.from('items').select('id');
+        const { data: warehouses } = await supabase.from('warehouses').select('id');
+        // In a real app, these would be more complex aggregations
+        const dashboardData = {
+            totalStockItems: items.length,
+            lowStockItems: 10, // dummy data
+            totalWarehouses: warehouses.length,
+            monthlyRevenue: 50000 // dummy data
+        };
+        return success(res, dashboardData);
+    } catch (err) {
+        return error(res, err.message, 500);
+    }
 }
 
-module.exports = { stockSummary };
+async function getInventorySummary(req, res) {
+    try {
+        // Example RPC call to a Supabase function
+        const { data, error: rpcError } = await supabase.rpc('get_inventory_summary');
+        if (rpcError) throw rpcError;
+        return success(res, data);
+    } catch(err) {
+        return error(res, err.message, 500);
+    }
+}
+
+
+module.exports = { 
+    getDashboardStats,
+    getInventorySummary
+    // Add other report functions here as they are built
+};
