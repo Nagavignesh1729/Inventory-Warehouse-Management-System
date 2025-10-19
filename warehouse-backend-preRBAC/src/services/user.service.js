@@ -1,51 +1,56 @@
+// src/services/user.service.js
 const supabase = require('../config/supabaseclient');
 
-const USERS_TABLE = 'users';
+const PROFILES_TABLE = 'profiles';
 
 async function getUserById(userId) {
-  const { data, error } = await supabase.from(USERS_TABLE).select('*').eq('user_id', userId).single();
+  // The primary key is now 'id' and it's a UUID.
+  const { data, error } = await supabase.from(PROFILES_TABLE).select('*').eq('id', userId).single();
   return { data, error };
 }
 
 async function listUsers() {
-  const { data, error } = await supabase.from(USERS_TABLE).select('*');
+  const { data, error } = await supabase.from(PROFILES_TABLE).select('*');
   return { data, error };
 }
 
-async function createUser(payload) {
-  const { data, error } = await supabase.from(USERS_TABLE).insert(payload).select().single();
+// This function is now primarily for creating a user's profile after they have been created in Supabase Auth.
+async function createUserProfile(payload) {
+  const { data, error } = await supabase.from(PROFILES_TABLE).insert(payload).select().single();
   return { data, error };
 }
 
-async function updateUser(userId, payload) {
-  const { data, error } = await supabase.from(USERS_TABLE).update(payload).eq('user_id', userId).select().single();
+async function updateUserProfile(userId, payload) {
+  const { data, error } = await supabase.from(PROFILES_TABLE).update(payload).eq('id', userId).select().single();
   return { data, error };
 }
 
-async function deleteUser(userId) {
-  const { data, error } = await supabase.from(USERS_TABLE).delete().eq('user_id', userId);
+async function deleteUserProfile(userId) {
+ 
+  const { data, error } = await supabase.from(PROFILES_TABLE).delete().eq('id', userId);
   return { data, error };
 }
 
+// Fetches the user's profile along with their role name.
 async function getUserWithRole(userId) {
-  const { data, error } = await supabase
-    .from(USERS_TABLE)
-    .select(`
-      *,
-      roles (
-        role_name
-      )
-    `)
-    .eq('user_id', userId)
-    .single();
-  return { data, error };
-}
+    const { data, error } = await supabase
+      .from(PROFILES_TABLE)
+      .select(`
+        *,
+        roles (
+          role_name
+        )
+      `)
+      .eq('id', userId)
+      .single();
+    return { data, error };
+  }
 
 module.exports = {
   getUserById,
   listUsers,
-  createUser,
-  updateUser,
+  createUserProfile,
+  updateUserProfile,
+  deleteUserProfile,
   getUserWithRole,
-  deleteUser
 };
