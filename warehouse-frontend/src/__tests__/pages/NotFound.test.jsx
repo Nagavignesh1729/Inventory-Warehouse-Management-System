@@ -1,7 +1,7 @@
 // NotFound.test.jsx
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import NotFound from '../pages/NotFound';
+import NotFound from '../../pages/NotFound';
 
 describe('NotFound Component', () => {
   beforeEach(() => {

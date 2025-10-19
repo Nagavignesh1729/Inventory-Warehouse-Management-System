@@ -1,7 +1,7 @@
 // src/__tests__/Reports.test.jsx
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import Reports from '../pages/Reports';
+import Reports from '../../pages/Reports';
 
 describe('Reports Component', () => {
   beforeEach(() => {
