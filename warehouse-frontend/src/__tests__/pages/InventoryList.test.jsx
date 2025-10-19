@@ -1,4 +1,4 @@
-// __tests__/InventoryList.test.jsx
+// InventoryList.test.jsx
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import InventoryList from '../pages/InventoryList';
