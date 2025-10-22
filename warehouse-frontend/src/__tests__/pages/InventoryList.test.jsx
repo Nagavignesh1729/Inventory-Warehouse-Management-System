@@ -1,7 +1,7 @@
 // InventoryList.test.jsx
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import InventoryList from '../pages/InventoryList';
+import InventoryList from '../../pages/InventoryList';
 
 describe('InventoryList Component - Basic Tests', () => {
 

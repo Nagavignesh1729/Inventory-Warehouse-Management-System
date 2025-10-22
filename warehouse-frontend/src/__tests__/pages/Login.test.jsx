@@ -1,6 +1,6 @@
 // src/__tests__/Login.test.jsx
 import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
-import Login from '../pages/Login';
+import Login from '../../pages/Login';
 
 jest.useFakeTimers();
 

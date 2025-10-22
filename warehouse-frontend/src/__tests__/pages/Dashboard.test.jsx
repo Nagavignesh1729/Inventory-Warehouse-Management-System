@@ -1,7 +1,7 @@
 // __tests__/Dashboard.test.jsx
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import Dashboard from '../pages/Dashboard';
+import Dashboard from '../../pages/Dashboard';
 
 describe('Dashboard Component - Basic Tests', () => {
 

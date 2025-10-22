@@ -1,5 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import ItemForm from '../pages/ItemForm';
+import ItemForm from '../../pages/ItemForm';
 
 describe('ItemForm', () => {
   const mockOnSave = jest.fn();

@@ -1,4 +1,4 @@
-// src/__tests__/Settings.test.jsx
+
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import Settings from '../../pages/Settings';

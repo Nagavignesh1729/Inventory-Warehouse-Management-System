@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { User } from 'lucide-react';
-import FormField from './FormField';
+import FormField from '../../components/FormField';
 
 test('calls onChange when typing', () => {
   const handleChange = jest.fn();

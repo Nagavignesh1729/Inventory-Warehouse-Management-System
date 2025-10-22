@@ -1,7 +1,7 @@
 // __tests__/CSVImporter.test.jsx
 import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
-import CSVImporter from "../components/CSVImporter";
+import CSVImporter from "../../components/CSVImporter";
 
 describe("CSVImporter Component", () => {
   const mockOnImport = jest.fn();
