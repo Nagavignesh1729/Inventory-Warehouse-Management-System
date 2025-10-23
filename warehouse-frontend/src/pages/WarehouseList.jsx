@@ -70,7 +70,7 @@ const WarehouseList = ({ onWarehouseSelect }) => {
       render: (value) => (
         <div className="flex items-center space-x-2">
           <Package className="w-4 h-4 text-blue-500" />
-          <span className="font-medium">{value.toLocaleString()} items</span>
+          <span className="font-medium">{value != null ? value.toLocaleString() : '0'} items</span>
         </div>
       )
     },
@@ -161,6 +161,7 @@ const WarehouseList = ({ onWarehouseSelect }) => {
     setShowWarehouseForm(false);
     setEditingWarehouse(null);
     } catch (err) {
+      console.error('Save warehouse error:', err);
       alert('Failed to save warehouse: ' + (err.message || 'Unknown error'));
     }
   };

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
 import Login from './pages/Login';
@@ -13,6 +13,7 @@ import Settings from './pages/Settings';
 import NotFound from './pages/NotFound';
 import Modal from './components/Modal';
 import CSVImporter from './components/CSVImporter';
+import { restoreSession } from './api/client';
 
 function App() {
   const [currentPage, setCurrentPage] = useState('login');
@@ -23,6 +24,18 @@ function App() {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
 
+  useEffect(() => {
+    async function init() {
+      const user = await restoreSession();
+      if (user) {
+        setCurrentUser(user);
+        setIsAuthenticated(true);
+        setCurrentPage('dashboard');
+      }
+    }
+    init();
+  }, []);
+  
   const addNotification = (notification: any) => {
     setNotifications(prev => [{ ...notification, id: Date.now(), read: false }, ...prev]);
   };
