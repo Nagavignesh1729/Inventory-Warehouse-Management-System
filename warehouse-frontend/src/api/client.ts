@@ -127,6 +127,14 @@ export async function fetchWithAuth(path: string, init: RequestInit = {}) {
 }
 
 // --- High-level API methods ---
+export async function signup(email: string, password: string, fullName?: string): Promise<{ access_token?: string; refresh_token?: string; user: any }> {
+  const { res, json } = await requestRaw('/auth/signup', {
+    method: 'POST',
+    body: JSON.stringify({ email, password, fullName }),
+  });
+  return handleResponse(res, json);
+}
+
 export async function login(email: string, password: string): Promise<{ access_token: string; refresh_token?: string; user: any }> {
   const { res, json } = await requestRaw('/auth/login', {
     method: 'POST',
@@ -184,11 +192,103 @@ export async function restoreSession(): Promise<any | null> {
 }
 
 
-// create new warehouses API
-export async function createWarehouse(data: Record<string, any>): Promise<any[]> {
+// --- Warehouse API Methods ---
+export async function createWarehouse(data: Record<string, any>): Promise<any> {
   return fetchWithAuth('/warehouses', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...authHeader() },
     body: JSON.stringify(data),
   });
+}
+
+export async function updateWarehouse(id: string, data: Record<string, any>): Promise<any> {
+  return fetchWithAuth(`/warehouses/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteWarehouse(id: string): Promise<void> {
+  return fetchWithAuth(`/warehouses/${id}`, {
+    method: 'DELETE',
+  });
+}
+
+export async function getWarehouse(id: string): Promise<any> {
+  return fetchWithAuth(`/warehouses/${id}`, {
+    method: 'GET',
+  });
+}
+
+// --- Inventory API Methods ---
+export async function listInventory(): Promise<any[]> {
+  return fetchWithAuth('/items', { method: 'GET' });
+}
+
+export async function createItem(data: Record<string, any>): Promise<any> {
+  return fetchWithAuth('/items', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateItem(id: string, data: Record<string, any>): Promise<any> {
+  return fetchWithAuth(`/items/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteItem(id: string): Promise<void> {
+  return fetchWithAuth(`/items/${id}`, {
+    method: 'DELETE',
+  });
+}
+
+// --- Categories API Methods ---
+export async function listCategories(): Promise<any[]> {
+  return fetchWithAuth('/categories', { method: 'GET' });
+}
+
+export async function createCategory(data: Record<string, any>): Promise<any> {
+  return fetchWithAuth('/categories', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+// --- Suppliers API Methods ---
+export async function listSuppliers(): Promise<any[]> {
+  return fetchWithAuth('/suppliers', { method: 'GET' });
+}
+
+export async function createSupplier(data: Record<string, any>): Promise<any> {
+  return fetchWithAuth('/suppliers', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+// --- Transfer API Methods ---
+export async function listTransfers(): Promise<any[]> {
+  return fetchWithAuth('/transfer-requests', { method: 'GET' });
+}
+
+export async function createTransfer(data: Record<string, any>): Promise<any> {
+  return fetchWithAuth('/transfer-requests', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+// --- Reports API Methods ---
+export async function getReports(): Promise<any> {
+  return fetchWithAuth('/reports', { method: 'GET' });
+}
+
+export async function getDashboardStats(): Promise<any> {
+  return fetchWithAuth('/reports/dashboard', { method: 'GET' });
+}
+
+export async function getInventorySummary(): Promise<any> {
+  return fetchWithAuth('/reports/inventory-summary', { method: 'GET' });
 }

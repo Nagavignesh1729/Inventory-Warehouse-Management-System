@@ -3,8 +3,8 @@ import { Package, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { login as apiLogin, me as apiMe, saveTokens } from '../api/client';
 
 const Login = ({ onLogin, onNavigateToSignup }) => {
-  const [email, setEmail] = useState('manager@inventorypro.com'); // Default email for demo
-  const [password, setPassword] = useState('password123'); // Default password for demo
+  const [email, setEmail] = useState('kiyoxcote@gmail.com'); // Default email for demo
+  const [password, setPassword] = useState('abcdefgh'); // Default password for demo
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 

@@ -5,8 +5,7 @@ import FilterBar from '../components/FilterBar';
 import Modal from '../components/Modal';
 import EmptyState from '../components/EmptyState';
 import Badge from '../components/Badge';
-import { listWarehouses as apiListWarehouses } from '../api/client';
-import { createWarehouse as apiCreateWarehouse } from '../api/client';
+import { listWarehouses as apiListWarehouses, createWarehouse as apiCreateWarehouse, updateWarehouse, deleteWarehouse } from '../api/client';
 
 const WarehouseList = ({ onWarehouseSelect }) => {
   const [showWarehouseForm, setShowWarehouseForm] = useState(false);
@@ -23,13 +22,13 @@ const WarehouseList = ({ onWarehouseSelect }) => {
       try {
         const data = await apiListWarehouses();
         const mapped = (data || []).map((row) => ({
-          id: row.warehouse_id || row.id || row.code || String(row.id || row.warehouse_id || ''),
-          name: row.name || row.warehouse_name || 'Unnamed',
-          location: row.location || [row.city, row.state].filter(Boolean).join(', ') || 'Unknown',
+          id: row.warehouse_id || String(Date.now()),
+          name: row.name || 'Unnamed',
+          location: row.location || 'Unknown',
           capacity: typeof row.capacity === 'number' ? `${row.capacity.toLocaleString()} sq ft` : (row.capacity || ''),
           currentStock: row.total_stock ?? row.current_stock ?? 0,
           utilization: row.utilization ?? 0,
-          status: row.status || 'Active',
+          status: row.is_active ? (row.status || 'Active') : 'Inactive',
           manager: row.manager || '',
           address: row.address || '',
           phone: row.phone || '',
@@ -139,27 +138,47 @@ const WarehouseList = ({ onWarehouseSelect }) => {
     setShowWarehouseForm(true);
   };
 
-  const handleDelete = (warehouseId) => {
+  const handleDelete = async (warehouseId) => {
     if (window.confirm('Are you sure you want to delete this warehouse?')) {
-      setWarehouses(warehouses.filter(wh => wh.id !== warehouseId));
+      try {
+        await deleteWarehouse(warehouseId);
+        setWarehouses(warehouses.filter(wh => wh.id !== warehouseId));
+      } catch (err) {
+        console.error('Delete warehouse error:', err);
+        alert('Failed to delete warehouse: ' + (err.message || 'Unknown error'));
+      }
     }
   };
 
   const handleSaveWarehouse = async (warehouseData) => {
     try {
-    if (editingWarehouse) {
-      // update exising record
-      const updated = await apiCreateWarehouse(warehouseData);
-      setWarehouses(warehouses.map(wh => 
-        wh.id === editingWarehouse.id ? { ...wh, ...updated } : wh
-      ));
-    } else {
-      // create new warehouse
-      const created = await apiCreateWarehouse(warehouseData);
-      setWarehouses([...warehouses, created]);
-    }
-    setShowWarehouseForm(false);
-    setEditingWarehouse(null);
+      if (editingWarehouse) {
+        // update existing record
+        const updated = await updateWarehouse(editingWarehouse.id, warehouseData);
+        setWarehouses(warehouses.map(wh => 
+          wh.id === editingWarehouse.id ? { ...wh, ...updated } : wh
+        ));
+      } else {
+        // create new warehouse
+        const created = await apiCreateWarehouse(warehouseData);
+        // Map the created warehouse to match frontend format
+        const mappedWarehouse = {
+          id: created.warehouse_id || String(Date.now()),
+          name: created.name || 'Unnamed',
+          location: created.location || 'Unknown',
+          capacity: created.capacity || '',
+          currentStock: created.total_stock ?? created.current_stock ?? 0,
+          utilization: created.utilization ?? 0,
+          status: created.is_active ? (created.status || 'Active') : 'Inactive',
+          manager: created.manager || '',
+          address: created.address || '',
+          phone: created.phone || '',
+          email: created.email || '',
+        };
+        setWarehouses([...warehouses, mappedWarehouse]);
+      }
+      setShowWarehouseForm(false);
+      setEditingWarehouse(null);
     } catch (err) {
       console.error('Save warehouse error:', err);
       alert('Failed to save warehouse: ' + (err.message || 'Unknown error'));
@@ -341,7 +360,7 @@ const WarehouseForm = ({ warehouse, onSave, onCancel }) => {
             onChange={handleChange}
           />
         </div>
-
+        
         <div>
           <label htmlFor="capacity" className="block text-sm font-medium text-gray-700">
             Capacity

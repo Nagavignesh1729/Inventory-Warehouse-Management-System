@@ -3,6 +3,37 @@ const supabase = require('../config/supabaseclient');
 const { success, error } = require('../utils/response');
 
 /**
+ * Sign up new user (POST /auth/signup)
+ * Creates a new user account with Supabase
+ */
+const signUp = async (req, res) => {
+  try {
+    const { email, password, fullName } = req.body;
+    if (!email || !password) return error(res, 'Email and password are required', 400);
+
+    const { data, error: signUpError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: fullName || ''
+        }
+      }
+    });
+
+    if (signUpError) return error(res, signUpError.message || 'Signup failed', 400);
+
+    return success(res, {
+      user: data.user,
+      access_token: data.session?.access_token,
+      refresh_token: data.session?.refresh_token
+    }, 'Signup successful');
+  } catch (err) {
+    return error(res, err.message || 'Signup failed', 500);
+  }
+};
+
+/**
  * Sign in existing user (POST /auth/login)
  * Returns Supabase access_token & user info
  */
@@ -99,6 +130,7 @@ const refreshToken = async (req, res) => {
 
 
 module.exports = {
+  signUp,
   signIn,
   signOut,
   getCurrentUser,

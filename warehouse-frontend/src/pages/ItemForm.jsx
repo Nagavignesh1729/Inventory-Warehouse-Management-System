@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { listCategories, listWarehouses } from '../api/client';
 
 const ItemForm = ({ item, onSave, onCancel }) => {
   const [formData, setFormData] = useState({
@@ -12,6 +13,38 @@ const ItemForm = ({ item, onSave, onCancel }) => {
     minStockLevel: 0
   });
 
+  const [categories, setCategories] = useState([]);
+  const [warehouses, setWarehouses] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Load categories and warehouses
+    const loadData = async () => {
+      try {
+        const [categoriesData, warehousesData] = await Promise.all([
+          listCategories(),
+          listWarehouses()
+        ]);
+        
+        setCategories(categoriesData || []);
+        setWarehouses(warehousesData || []);
+      } catch (err) {
+        console.error('Error loading form data:', err);
+        // Set default categories if API fails
+        setCategories([
+          { category_id: 'default-1', name: 'Electronics' },
+          { category_id: 'default-2', name: 'Clothing' },
+          { category_id: 'default-3', name: 'Books' },
+          { category_id: 'default-4', name: 'Home & Garden' }
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadData();
+  }, []);
+
   useEffect(() => {
     if (item) {
       setFormData({
@@ -22,7 +55,7 @@ const ItemForm = ({ item, onSave, onCancel }) => {
         description: item.description || '',
         sku: item.sku || '',
         price: item.price || 0,
-        minStockLevel: item.minStockLevel || 0
+        minStockLevel: item.minStockLevel || item.reorderLevel || 0
       });
     }
   }, [item]);
@@ -30,15 +63,22 @@ const ItemForm = ({ item, onSave, onCancel }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     
-    // Determine status based on stock level
-    let status = 'In Stock';
-    if (formData.stockLevel === 0) {
-      status = 'Out of Stock';
-    } else if (formData.stockLevel <= formData.minStockLevel) {
-      status = 'Low Stock';
-    }
+    // Find the selected warehouse ID
+    const selectedWarehouse = warehouses.find(w => w.name === formData.warehouse);
+    const warehouse_id = selectedWarehouse?.id || selectedWarehouse?.warehouse_id;
+    
+    // Prepare data for backend
+    const itemData = {
+      name: formData.name,
+      category: formData.category, // This will be converted to category_id in backend
+      stockLevel: formData.stockLevel,
+      warehouse_id: warehouse_id,
+      description: formData.description,
+      sku: formData.sku,
+      minStockLevel: formData.minStockLevel
+    };
 
-    onSave({ ...formData, status });
+    onSave(itemData);
   };
 
   const handleChange = (e) => {
@@ -92,14 +132,14 @@ const ItemForm = ({ item, onSave, onCancel }) => {
             className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             value={formData.category}
             onChange={handleChange}
+            disabled={loading}
           >
             <option value="">Select a category</option>
-            <option value="Electronics">Electronics</option>
-            <option value="Clothing">Clothing</option>
-            <option value="Books">Books</option>
-            <option value="Home & Garden">Home & Garden</option>
-            <option value="Sports">Sports</option>
-            <option value="Toys">Toys</option>
+            {categories.map((category) => (
+              <option key={category.category_id || category.name} value={category.name}>
+                {category.name}
+              </option>
+            ))}
           </select>
         </div>
 
@@ -114,13 +154,14 @@ const ItemForm = ({ item, onSave, onCancel }) => {
             className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             value={formData.warehouse}
             onChange={handleChange}
+            disabled={loading}
           >
             <option value="">Select a warehouse</option>
-            <option value="Main Warehouse">Main Warehouse</option>
-            <option value="Electronics Hub">Electronics Hub</option>
-            <option value="Tech Center">Tech Center</option>
-            <option value="Fashion Store">Fashion Store</option>
-            <option value="Book Depot">Book Depot</option>
+            {warehouses.map((warehouse) => (
+              <option key={warehouse.id || warehouse.warehouse_id} value={warehouse.name}>
+                {warehouse.name}
+              </option>
+            ))}
           </select>
         </div>
 

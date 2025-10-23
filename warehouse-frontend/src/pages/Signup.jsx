@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Package, User, Mail, Lock } from 'lucide-react';
+import { signup as apiSignup, saveTokens } from '../api/client';
 
 const Signup = ({ onNavigateToLogin }) => {
   const [formData, setFormData] = useState({
@@ -16,7 +17,7 @@ const Signup = ({ onNavigateToLogin }) => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match.');
@@ -25,12 +26,25 @@ const Signup = ({ onNavigateToLogin }) => {
     setError('');
     setIsLoading(true);
 
-    // Simulate signup process
-    setTimeout(() => {
-      setIsLoading(false);
-      alert('Signup successful! Please log in.');
+    try {
+      const { access_token, refresh_token, user } = await apiSignup(
+        formData.email, 
+        formData.password, 
+        formData.fullName
+      );
+      
+      // If tokens are provided, save them (user is automatically logged in)
+      if (access_token) {
+        saveTokens({ access_token, refresh_token });
+      }
+      
+      alert('Signup successful! Please check your email to verify your account, then log in.');
       onNavigateToLogin();
-    }, 1000);
+    } catch (err) {
+      setError(err.message || 'Signup failed. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

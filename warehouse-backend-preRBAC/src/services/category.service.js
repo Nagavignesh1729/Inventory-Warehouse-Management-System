@@ -11,11 +11,20 @@ async function getCategory(id) {
 }
 
 async function createCategory(payload) {
-  return supabase.from(CATEGORIES_TABLE).insert(payload).select().single();
+  // Remove created_by and updated_by for now since they cause foreign key issues
+  const cleanPayload = {
+    name: payload.name,
+    description: payload.description || null
+  };
+  return supabase.from(CATEGORIES_TABLE).insert(cleanPayload).select().single();
 }
 
 async function updateCategory(id, payload) {
-  return supabase.from(CATEGORIES_TABLE).update(payload).eq('category_id', id).select().single();
+  const cleanPayload = {
+    name: payload.name,
+    description: payload.description || null
+  };
+  return supabase.from(CATEGORIES_TABLE).update(cleanPayload).eq('category_id', id).select().single();
 }
 
 async function deleteCategory(id) {

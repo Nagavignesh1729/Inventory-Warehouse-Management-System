@@ -1,38 +1,70 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Package, AlertTriangle, Warehouse, TrendingUp, Plus, Upload, FileText } from 'lucide-react';
 import CardMetric from '../components/CardMetric';
+import { getDashboardStats, getInventorySummary } from '../api/client';
 
 const Dashboard = ({ onNavigate, onImport }) => {
-  const metrics = [
+  const [dashboardData, setDashboardData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const stats = await getDashboardStats();
+        if (!cancelled) {
+          setDashboardData(stats);
+          setError(null);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err.message || 'Failed to load dashboard data');
+          // Fallback to default data
+          setDashboardData({
+            totalStockItems: 0,
+            lowStockItems: 0,
+            totalWarehouses: 0,
+            monthlyRevenue: 0
+          });
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const metrics = dashboardData ? [
     {
       title: 'Total Stock Items',
-      value: '1,247',
+      value: dashboardData.totalStockItems?.toLocaleString() || '0',
       icon: Package,
       color: 'blue',
       trend: '+12%'
     },
     {
       title: 'Low Stock Items',
-      value: '23',
+      value: dashboardData.lowStockItems?.toString() || '0',
       icon: AlertTriangle,
       color: 'orange',
       trend: '-5%'
     },
     {
       title: 'Total Warehouses',
-      value: '8',
+      value: dashboardData.totalWarehouses?.toString() || '0',
       icon: Warehouse,
       color: 'teal',
       trend: '+2'
     },
     {
       title: 'Monthly Revenue',
-      value: '$124,890',
+      value: `$${dashboardData.monthlyRevenue?.toLocaleString() || '0'}`,
       icon: TrendingUp,
       color: 'green',
       trend: '+18%'
     }
-  ];
+  ] : [];
 
   const recentActivity = [
     { id: 1, action: 'Item Added', item: 'Samsung Galaxy S24', warehouse: 'Main Warehouse', time: '2 hours ago' },
@@ -75,11 +107,19 @@ const Dashboard = ({ onNavigate, onImport }) => {
       </div>
 
       {/* Metrics Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {metrics.map((metric, index) => (
-          <CardMetric key={index} {...metric} />
-        ))}
-      </div>
+      {loading && (
+        <div className="text-gray-600">Loading dashboard data...</div>
+      )}
+      {error && (
+        <div className="text-red-600">Failed to load dashboard: {error}</div>
+      )}
+      {!loading && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {metrics.map((metric, index) => (
+            <CardMetric key={index} {...metric} />
+          ))}
+        </div>
+      )}
 
       {/* Recent Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
