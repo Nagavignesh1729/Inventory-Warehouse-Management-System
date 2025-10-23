@@ -176,7 +176,12 @@ export async function logout(token?: string): Promise<void> {
 
 // Example domain API (for next steps)
 export async function listWarehouses(): Promise<any[]> {
-  return fetchWithAuth('/warehouses', { method: 'GET' });
+  const warehouses = await fetchWithAuth('/warehouses', { method: 'GET' });
+  // Transform warehouse_id to id for frontend compatibility
+  return warehouses.map((warehouse: any) => ({
+    ...warehouse,
+    id: warehouse.warehouse_id
+  }));
 }
 
 // --- Session restore helper ---
@@ -221,7 +226,13 @@ export async function getWarehouse(id: string): Promise<any> {
 
 // --- Inventory API Methods ---
 export async function listInventory(): Promise<any[]> {
-  return fetchWithAuth('/items', { method: 'GET' });
+  const items = await fetchWithAuth('/items', { method: 'GET' });
+  // Transform item_id to id and stock_level to stockLevel for frontend compatibility
+  return items.map((item: any) => ({
+    ...item,
+    id: item.item_id,
+    stockLevel: item.stock_level
+  }));
 }
 
 export async function createItem(data: Record<string, any>): Promise<any> {
@@ -277,6 +288,30 @@ export async function createTransfer(data: Record<string, any>): Promise<any> {
   return fetchWithAuth('/transfer-requests', {
     method: 'POST',
     body: JSON.stringify(data),
+  });
+}
+
+export async function approveTransfer(id: string): Promise<any> {
+  return fetchWithAuth(`/transfer-requests/${id}/approve`, {
+    method: 'POST',
+  });
+}
+
+export async function rejectTransfer(id: string): Promise<any> {
+  return fetchWithAuth(`/transfer-requests/${id}/reject`, {
+    method: 'POST',
+  });
+}
+
+export async function completeTransfer(id: string): Promise<any> {
+  return fetchWithAuth(`/transfer-requests/${id}/complete`, {
+    method: 'POST',
+  });
+}
+
+export async function cancelTransfer(id: string): Promise<any> {
+  return fetchWithAuth(`/transfer-requests/${id}/cancel`, {
+    method: 'POST',
   });
 }
 

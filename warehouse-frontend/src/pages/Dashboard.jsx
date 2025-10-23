@@ -5,6 +5,7 @@ import { getDashboardStats, getInventorySummary } from '../api/client';
 
 const Dashboard = ({ onNavigate, onImport }) => {
   const [dashboardData, setDashboardData] = useState(null);
+  const [inventoryData, setInventoryData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -12,9 +13,14 @@ const Dashboard = ({ onNavigate, onImport }) => {
     let cancelled = false;
     (async () => {
       try {
-        const stats = await getDashboardStats();
+        const [stats, inventory] = await Promise.all([
+          getDashboardStats(),
+          getInventorySummary()
+        ]);
+        
         if (!cancelled) {
           setDashboardData(stats);
+          setInventoryData(inventory);
           setError(null);
         }
       } catch (err) {
@@ -26,6 +32,11 @@ const Dashboard = ({ onNavigate, onImport }) => {
             lowStockItems: 0,
             totalWarehouses: 0,
             monthlyRevenue: 0
+          });
+          setInventoryData({
+            stockSummary: { inStock: 0, lowStock: 0, outOfStock: 0 },
+            categoryBreakdown: [],
+            recentActivity: []
           });
         }
       } finally {
@@ -66,13 +77,13 @@ const Dashboard = ({ onNavigate, onImport }) => {
     }
   ] : [];
 
-  const recentActivity = [
-    { id: 1, action: 'Item Added', item: 'Samsung Galaxy S24', warehouse: 'Main Warehouse', time: '2 hours ago' },
-    { id: 2, action: 'Stock Updated', item: 'iPhone 15 Pro', warehouse: 'Electronics Hub', time: '4 hours ago' },
-    { id: 3, action: 'Low Stock Alert', item: 'MacBook Air M2', warehouse: 'Tech Center', time: '6 hours ago' },
-    { id: 4, action: 'Warehouse Added', item: 'North Branch', warehouse: 'System', time: '1 day ago' },
-    { id: 5, action: 'Bulk Import', item: '145 items imported', warehouse: 'Main Warehouse', time: '2 days ago' }
+  // Use real data or fallback to sample data
+  const recentActivity = inventoryData?.recentActivity?.length > 0 ? inventoryData.recentActivity : [
+    { id: 1, action: 'No recent activity', item: 'Start adding items to see activity', warehouse: 'System', time: 'N/A' }
   ];
+
+  const stockSummary = inventoryData?.stockSummary || { inStock: 0, lowStock: 0, outOfStock: 0 };
+  const categoryBreakdown = inventoryData?.categoryBreakdown || [];
 
   return (
     <div className="space-y-8">
@@ -147,15 +158,15 @@ const Dashboard = ({ onNavigate, onImport }) => {
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">In Stock</span>
-                <span className="font-semibold text-green-600">1,185 items</span>
+                <span className="font-semibold text-green-600">{stockSummary.inStock} items</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Low Stock</span>
-                <span className="font-semibold text-orange-600">23 items</span>
+                <span className="font-semibold text-orange-600">{stockSummary.lowStock} items</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Out of Stock</span>
-                <span className="font-semibold text-red-600">8 items</span>
+                <span className="font-semibold text-red-600">{stockSummary.outOfStock} items</span>
               </div>
             </div>
           </div>
@@ -163,22 +174,16 @@ const Dashboard = ({ onNavigate, onImport }) => {
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Categories</h3>
             <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Electronics</span>
-                <span className="font-semibold">425 items</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Clothing</span>
-                <span className="font-semibold">312 items</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Books</span>
-                <span className="font-semibold">198 items</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Home & Garden</span>
-                <span className="font-semibold">156 items</span>
-              </div>
+              {categoryBreakdown.length > 0 ? (
+                categoryBreakdown.map((category, index) => (
+                  <div key={index} className="flex justify-between items-center">
+                    <span className="text-gray-600">{category.name}</span>
+                    <span className="font-semibold">{category.count} items</span>
+                  </div>
+                ))
+              ) : (
+                <div className="text-gray-500 text-sm">No categories with stock yet</div>
+              )}
             </div>
           </div>
         </div>

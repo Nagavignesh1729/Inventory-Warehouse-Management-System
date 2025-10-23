@@ -1,48 +1,105 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, ArrowRightLeft, AlertTriangle } from 'lucide-react';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import Badge from '../components/Badge';
-import TransferForm from './TransferForm';
+import TransferFormFixed from './TransferFormFixed';
+import { listTransfers, createTransfer, approveTransfer, rejectTransfer, listWarehouses, listInventory } from '../api/client';
 
 const Transfers = ({ addNotification }) => {
   const [showTransferForm, setShowTransferForm] = useState(false);
-  
-  const initialTransfers = [
-    { id: 'TRN001', item: 'iPhone 15 Pro', from: 'Main Warehouse', to: 'Electronics Hub', quantity: 10, status: 'Pending Approval', initiatedBy: 'Main Warehouse' },
-    { id: 'TRN002', item: 'Nike Air Force 1', from: 'Fashion Store', to: 'Main Warehouse', quantity: 50, status: 'Completed', initiatedBy: 'Fashion Store' },
-  ];
-  const [transfers, setTransfers] = useState(initialTransfers);
-  
-  const [currentUserWarehouse, setCurrentUserWarehouse] = useState('Electronics Hub');
-  const warehouses = ['Main Warehouse', 'Electronics Hub', 'Tech Center', 'Fashion Store'];
+  const [transfers, setTransfers] = useState([]);
+  const [warehouses, setWarehouses] = useState([]);
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [currentUserWarehouse, setCurrentUserWarehouse] = useState('');
 
-  const handleSaveTransfer = (transferData) => {
-    const newTransfer = {
-      ...transferData,
-      id: `TRN${String(transfers.length + 1).padStart(3, '0')}`,
-      status: 'Pending Approval',
-      initiatedBy: transferData.from,
-    };
-    setTransfers([newTransfer, ...transfers]);
-    setShowTransferForm(false);
+  useEffect(() => {
+    loadData();
+  }, []);
 
-    // Create a new notification
-    addNotification({
-      icon: AlertTriangle,
-      text: `New transfer request for ${transferData.quantity}x "${transferData.item}" from ${transferData.from}.`,
-      time: 'Just now',
-      color: 'orange',
-      warehouse: transferData.to, // To notify the correct warehouse manager
-    });
+  const loadData = async () => {
+    try {
+      const [transfersData, warehousesData, itemsData] = await Promise.all([
+        listTransfers(),
+        listWarehouses(),
+        listInventory()
+      ]);
+      
+      console.log('Loaded warehouses:', warehousesData);
+      console.log('Loaded items:', itemsData);
+      console.log('Loaded transfers:', transfersData);
+      
+      setTransfers(transfersData || []);
+      setWarehouses(warehousesData || []);
+      setItems(itemsData || []);
+      
+      // Set default warehouse to first one
+      if (warehousesData && warehousesData.length > 0 && !currentUserWarehouse) {
+        setCurrentUserWarehouse(warehousesData[0].name);
+      }
+      
+      setError(null);
+    } catch (err) {
+      console.error('Error loading transfer data:', err);
+      setError(err.message || 'Failed to load transfer data');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleApprove = (transferId) => {
-    setTransfers(transfers.map(t => t.id === transferId ? { ...t, status: 'Completed' } : t));
+  const handleSaveTransfer = async (transferData) => {
+    try {
+      console.log('Transfer data received from form:', transferData);
+      
+      const created = await createTransfer(transferData);
+      
+      // Add to local state
+      setTransfers([created, ...transfers]);
+      setShowTransferForm(false);
+
+      // Find item and warehouse names for notification
+      const selectedItem = items.find(item => item.id === transferData.item_id);
+      const sourceWarehouse = warehouses.find(wh => wh.id === transferData.source_warehouse_id);
+      const destWarehouse = warehouses.find(wh => wh.id === transferData.dest_warehouse_id);
+
+      // Create a new notification
+      addNotification({
+        icon: AlertTriangle,
+        text: `New transfer request for ${transferData.quantity}x "${selectedItem?.name || 'Unknown Item'}" from ${sourceWarehouse?.name || 'Unknown Warehouse'}.`,
+        time: 'Just now',
+        color: 'orange',
+        warehouse: destWarehouse?.name || 'Unknown Warehouse',
+      });
+    } catch (err) {
+      console.error('Error creating transfer:', err);
+      alert('Failed to create transfer: ' + (err.message || 'Unknown error'));
+    }
   };
 
-  const handleReject = (transferId) => {
-    setTransfers(transfers.map(t => t.id === transferId ? { ...t, status: 'Rejected' } : t));
+  const handleApprove = async (transferId) => {
+    try {
+      await approveTransfer(transferId);
+      setTransfers(transfers.map(t => 
+        t.id === transferId ? { ...t, status: 'APPROVED' } : t
+      ));
+    } catch (err) {
+      console.error('Error approving transfer:', err);
+      alert('Failed to approve transfer: ' + (err.message || 'Unknown error'));
+    }
+  };
+
+  const handleReject = async (transferId) => {
+    try {
+      await rejectTransfer(transferId);
+      setTransfers(transfers.map(t => 
+        t.id === transferId ? { ...t, status: 'REJECTED' } : t
+      ));
+    } catch (err) {
+      console.error('Error rejecting transfer:', err);
+      alert('Failed to reject transfer: ' + (err.message || 'Unknown error'));
+    }
   };
 
   const columns = [
@@ -55,24 +112,41 @@ const Transfers = ({ addNotification }) => {
       key: 'status',
       label: 'Status',
       render: (status) => {
-        const variant = status === 'Completed' ? 'green' : status === 'Pending Approval' ? 'yellow' : 'red';
-        return <Badge text={status} variant={variant} />;
+        const variant = status === 'COMPLETED' ? 'green' : 
+                      status === 'APPROVED' ? 'blue' :
+                      status === 'PENDING' ? 'yellow' : 'red';
+        const displayStatus = status === 'PENDING' ? 'Pending Approval' :
+                            status === 'APPROVED' ? 'Approved' :
+                            status === 'COMPLETED' ? 'Completed' :
+                            status === 'REJECTED' ? 'Rejected' :
+                            status === 'CANCELLED' ? 'Cancelled' : status;
+        return <Badge text={displayStatus} variant={variant} />;
       },
     },
     {
       key: 'actions',
       label: 'Actions',
       render: (_, row) => {
-        const canApprove = row.status === 'Pending Approval' && row.to === currentUserWarehouse;
+        const canApprove = row.status === 'PENDING' && row.to === currentUserWarehouse;
         if (canApprove) {
           return (
             <div className="flex space-x-2">
-              <button onClick={() => handleApprove(row.id)} className="text-xs bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600">Approve</button>
-              <button onClick={() => handleReject(row.id)} className="text-xs bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600">Reject</button>
+              <button 
+                onClick={() => handleApprove(row.id)} 
+                className="text-xs bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600"
+              >
+                Approve
+              </button>
+              <button 
+                onClick={() => handleReject(row.id)} 
+                className="text-xs bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
+              >
+                Reject
+              </button>
             </div>
           );
         }
-        return null;
+        return <span className="text-xs text-gray-500">No actions available</span>;
       },
     },
   ];
@@ -106,22 +180,35 @@ const Transfers = ({ addNotification }) => {
                         onChange={(e) => setCurrentUserWarehouse(e.target.value)}
                         className="ml-2 font-bold bg-yellow-100 border-yellow-300 rounded focus:ring-yellow-500"
                     >
-                        {warehouses.map(wh => <option key={wh} value={wh}>{wh}</option>)}
+                        {warehouses.map(wh => (
+                          <option key={wh.id} value={wh.name}>
+                            {wh.name}
+                          </option>
+                        ))}
                     </select>
                 </p>
             </div>
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-x-auto">
-        <DataTable columns={columns} data={transfers} />
-      </div>
+      {loading && (
+        <div className="text-gray-600">Loading transfers...</div>
+      )}
+      {error && (
+        <div className="text-red-600">Failed to load transfers: {error}</div>
+      )}
+      {!loading && (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-x-auto">
+          <DataTable columns={columns} data={transfers} />
+        </div>
+      )}
 
       <Modal isOpen={showTransferForm} onClose={() => setShowTransferForm(false)} title="Initiate New Transfer" size="lg">
-        <TransferForm
+        <TransferFormFixed
           onSave={handleSaveTransfer}
           onCancel={() => setShowTransferForm(false)}
           warehouses={warehouses}
+          items={items}
         />
       </Modal>
     </div>

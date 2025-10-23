@@ -4,7 +4,7 @@ const STOCK_TABLE = 'stock_levels';
 const TRANSACTIONS_TABLE = 'transactions';
 
 async function listStockLevels(filters = {}) {
-  let query = supabase.from(STOCK_TABLE).select('*, item:items(*), warehouse:warehouses(*)');
+  let query = supabase.from(STOCK_TABLE).select('*');
   if (filters.warehouse_id) {
     query = query.eq('warehouse_id', filters.warehouse_id);
   }
@@ -28,7 +28,7 @@ async function updateStockLevel(id, payload) {
 
 
 async function listTransactions(filters = {}) {
-  let query = supabase.from(TRANSACTIONS_TABLE).select('*, item:items(*), warehouse:warehouses(*)');
+  let query = supabase.from(TRANSACTIONS_TABLE).select('*');
     if (filters.warehouse_id) {
         query = query.eq('warehouse_id', filters.warehouse_id);
     }
@@ -43,7 +43,96 @@ async function getTransaction(id) {
 }
 
 async function createTransaction(payload) {
-  return supabase.from(TRANSACTIONS_TABLE).insert(payload).select().single();
+  try {
+    // Clean payload to avoid foreign key issues
+    const cleanPayload = {
+      item_id: payload.item_id,
+      warehouse_id: payload.warehouse_id,
+      type: payload.type,
+      quantity: payload.quantity,
+      notes: payload.notes,
+      transfer_request_id: payload.transfer_request_id || null
+      // Skip initiated_by to avoid foreign key constraints
+    };
+    
+    // Create the transaction record
+    const { data: transaction, error: transError } = await supabase
+      .from(TRANSACTIONS_TABLE)
+      .insert(cleanPayload)
+      .select()
+      .single();
+    
+    if (transError) throw transError;
+    
+    // Update the stock levels based on the transaction
+    await updateStockFromTransaction(cleanPayload);
+    
+    return { data: transaction, error: null };
+  } catch (error) {
+    return { data: null, error };
+  }
+}
+
+async function updateStockFromTransaction(transactionData) {
+  const { item_id, warehouse_id, type, quantity } = transactionData;
+  
+  console.log(`Updating stock: ${type} ${quantity} units for item ${item_id} in warehouse ${warehouse_id}`);
+  
+  // Get current stock level
+  const { data: currentStock, error: fetchError } = await supabase
+    .from(STOCK_TABLE)
+    .select('*')
+    .eq('item_id', item_id)
+    .eq('warehouse_id', warehouse_id)
+    .single();
+  
+  if (fetchError && fetchError.code !== 'PGRST116') {
+    console.error('Error fetching stock:', fetchError);
+    throw fetchError;
+  }
+  
+  if (currentStock) {
+    // Update existing stock level
+    const newQuantity = type === 'IN' 
+      ? currentStock.quantity + quantity 
+      : Math.max(0, currentStock.quantity - quantity);
+    
+    console.log(`Updating existing stock from ${currentStock.quantity} to ${newQuantity}`);
+    
+    const { error: updateError } = await supabase
+      .from(STOCK_TABLE)
+      .update({ 
+        quantity: newQuantity
+      })
+      .eq('stock_id', currentStock.stock_id);
+    
+    if (updateError) {
+      console.error('Error updating stock:', updateError);
+      throw updateError;
+    }
+    
+    console.log(`✅ Stock updated successfully`);
+  } else if (type === 'IN') {
+    // Create new stock level record for incoming stock
+    console.log(`Creating new stock record with ${quantity} units`);
+    
+    const { error: insertError } = await supabase
+      .from(STOCK_TABLE)
+      .insert({
+        item_id,
+        warehouse_id,
+        quantity
+      });
+    
+    if (insertError) {
+      console.error('Error creating stock:', insertError);
+      throw insertError;
+    }
+    
+    console.log(`✅ New stock record created`);
+  } else {
+    console.log(`No existing stock found for OUT transaction - skipping`);
+  }
 }
 
 module.exports = {
@@ -54,4 +143,5 @@ module.exports = {
   listTransactions,
   getTransaction,
   createTransaction,
+  updateStockFromTransaction,
 };
