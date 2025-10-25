@@ -25,7 +25,7 @@ const WarehouseList = ({ onWarehouseSelect }) => {
           id: row.warehouse_id || String(Date.now()),
           name: row.name || 'Unnamed',
           location: row.location || 'Unknown',
-          capacity: typeof row.capacity === 'number' ? `${row.capacity.toLocaleString()} sq ft` : (row.capacity || ''),
+          capacity: typeof row.capacity === 'number' ? `${row.capacity.toLocaleString()}` : (row.capacity || ''),
           currentStock: row.total_stock ?? row.current_stock ?? 0,
           utilization: row.utilization ?? 0,
           status: row.is_active ? (row.status || 'Active') : 'Inactive',
@@ -378,7 +378,7 @@ const WarehouseForm = ({ warehouse, onSave, onCancel }) => {
 
         <div>
           <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-            Phone Number
+            Phone Number *
           </label>
           <input
             type="tel"
