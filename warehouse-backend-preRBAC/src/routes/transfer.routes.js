@@ -3,10 +3,9 @@ const express = require('express');
 const router = express.Router();
 const transferController = require('../controllers/transfer.controller');
 const auth = require('../middlewares/auth.middleware');
+// Removed authorize and ROLES
 
-// RBAC is removed for preRBAC version; all authenticated users can access these.
-
-// CRUD operations for transfers
+// All routes accessible to any authenticated user
 router.get('/', auth, transferController.listTransfers);
 router.get('/:id', auth, transferController.getTransfer);
 router.post('/', auth, transferController.createTransfer);
@@ -19,3 +18,4 @@ router.post('/:id/complete', auth, transferController.completeTransfer);
 router.post('/:id/cancel', auth, transferController.cancelTransfer);
 
 module.exports = router;
+

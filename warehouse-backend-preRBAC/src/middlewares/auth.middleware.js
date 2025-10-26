@@ -1,8 +1,9 @@
 const supabase = require('../config/supabaseclient');
 const { error } = require('../utils/response');
+// No longer importing userService
 
 /**
- * Middleware: verify bearer token and attach user info.
+ * Middleware: verify bearer token and attach user.
  * This simplified version checks for a valid token but does NOT fetch the user role.
  */
 module.exports = async function authMiddleware(req, res, next) {
@@ -14,16 +15,18 @@ module.exports = async function authMiddleware(req, res, next) {
       return error(res, 'Authorization token missing', 401, 'AUTH_REQUIRED');
     }
 
-    // Verify token with Supabase
-    const { data: { user }, error: supError } = await supabase.auth.getUser(token);
-    
-    if (supError || !user) {
+    // 1. Verify token with Supabase
+    const { data: { user: authUser }, error: supError } = await supabase.auth.getUser(token);
+    if (supError || !authUser) {
       return error(res, 'Invalid or expired token', 401, 'INVALID_TOKEN');
     }
-
-    // Attach basic user info to the request object
-    // The detailed profile with role is no longer fetched here.
-    req.user = user;
+    
+    // 2. Attach basic user info (from auth.users) to the request object
+    req.user = {
+      id: authUser.id,
+      email: authUser.email,
+      ...authUser
+    };
 
     next();
   } catch (err) {
@@ -31,3 +34,4 @@ module.exports = async function authMiddleware(req, res, next) {
     return error(res, 'Authentication error', 500, 'SERVER_ERROR');
   }
 };
+
