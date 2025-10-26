@@ -3,51 +3,48 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import InventoryList from '../../pages/InventoryList';
 
-describe('InventoryList Component - Basic Tests', () => {
+describe('InventoryList Component', () => {
+  test('renders inventory list and filters correctly', () => {
+    const handleImport = jest.fn();
 
-  test('renders inventory management title and buttons', () => {
+    render(<InventoryList onImport={handleImport} />);
+
+    // Check header
+    expect(screen.getByText('Inventory Management')).toBeInTheDocument();
+
+    // Check Add Item button
+    const addButton = screen.getByText('Add Item');
+    expect(addButton).toBeInTheDocument();
+
+    // Click Import CSV button
+    const importButton = screen.getByText('Import CSV');
+    fireEvent.click(importButton);
+    expect(handleImport).toHaveBeenCalled();
+
+    // Search input should exist
+    const searchInput = screen.getByRole('textbox');
+    expect(searchInput).toBeInTheDocument();
+
+    // Type in search to filter items
+    fireEvent.change(searchInput, { target: { value: 'iPhone' } });
+    expect(screen.getByText('iPhone 15 Pro')).toBeInTheDocument();
+    expect(screen.queryByText('Samsung Galaxy S24')).not.toBeInTheDocument();
+
+    // Click Add Item to open modal
+    fireEvent.click(addButton);
+    expect(screen.getByText('Add New Item')).toBeInTheDocument();
+  });
+
+  test('shows empty state when no items match filters', () => {
     render(<InventoryList onImport={() => {}} />);
-    
-    expect(screen.getByText(/Inventory Management/i)).toBeInTheDocument();
-    expect(screen.getByText(/Add Item/i)).toBeInTheDocument();
-    expect(screen.getByText(/Import CSV/i)).toBeInTheDocument();
-    expect(screen.getByText(/Export CSV/i)).toBeInTheDocument();
-  });
 
-  test('calls onImport prop when Import CSV button clicked', () => {
-    const onImport = jest.fn();
-    render(<InventoryList onImport={onImport} />);
-    
-    fireEvent.click(screen.getByText(/Import CSV/i));
-    expect(onImport).toHaveBeenCalled();
-  });
+    // Get search input
+    const searchInput = screen.getByRole('textbox');
 
-  test('opens modal when Add Item button clicked', () => {
-    render(<InventoryList onImport={() => {}} />);
-    
-    fireEvent.click(screen.getByText(/Add Item/i));
-    expect(screen.getByText(/Add New Item/i)).toBeInTheDocument();
-  });
+    // Type a value that matches no item
+    fireEvent.change(searchInput, { target: { value: 'NonExistingItem' } });
 
-  test('filtering works correctly', () => {
-    render(<InventoryList onImport={() => {}} />);
-    
-    // Search for an existing item
-    const searchInput = screen.getByPlaceholderText(/Search/i);
-    if (searchInput) {
-      fireEvent.change(searchInput, { target: { value: 'iPhone' } });
-      expect(screen.getByText(/iPhone 15 Pro/i)).toBeInTheDocument();
-    }
+    expect(screen.getByText('No inventory items found')).toBeInTheDocument();
+    expect(screen.getByText('Get started by adding your first inventory item or importing from CSV')).toBeInTheDocument();
   });
-
-  test('shows empty state when no items match filter', () => {
-    render(<InventoryList onImport={() => {}} />);
-    
-    const searchInput = screen.getByPlaceholderText(/Search/i);
-    if (searchInput) {
-      fireEvent.change(searchInput, { target: { value: 'NonExistentItem' } });
-      expect(screen.getByText(/No inventory items found/i)).toBeInTheDocument();
-    }
-  });
-
 });
